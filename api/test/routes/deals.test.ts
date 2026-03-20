@@ -1,19 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 
-// Mock shared modules before importing the app so route handlers
+// Mock lib modules before importing the app so route handlers
 // never touch a real database or call real business logic.
-vi.mock("@repo/shared/core", () => ({
+vi.mock("@repo/lib/core", () => ({
   createDeal: vi.fn(),
   getDealsByTenant: vi.fn(),
 }));
 
-vi.mock("@repo/shared/db", () => ({
+vi.mock("@repo/lib/db", () => ({
   getDb: vi.fn().mockReturnValue({}),
 }));
 
 import { app } from "../../src/app";
-import { createDeal, getDealsByTenant } from "@repo/shared/core";
+import { createDeal, getDealsByTenant } from "@repo/lib/core";
 
 const TENANT_ID = "tenant-123";
 

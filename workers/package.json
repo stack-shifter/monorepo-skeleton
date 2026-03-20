@@ -7,7 +7,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@repo/shared": "*"
+    "@repo/lib": "*"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.161"

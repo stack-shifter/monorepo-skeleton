@@ -1,7 +1,7 @@
 import type { SQSHandler, SQSRecord } from "aws-lambda";
-import { logActivity } from "@repo/shared/core";
-import { getDb } from "@repo/shared/db";
-import { aiService } from "@repo/shared/services";
+import { logActivity } from "@repo/lib/core";
+import { getDb } from "@repo/lib/db";
+import { aiService } from "@repo/lib/services";
 
 interface DealEnrichedEvent {
   dealId: string;

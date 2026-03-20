@@ -5,8 +5,8 @@ export default defineConfig({
     projects: [
       defineProject({
         test: {
-          name: "shared",
-          root: "./shared",
+          name: "lib",
+          root: "./lib",
           include: ["test/**/*.test.ts"],
           environment: "node",
           globals: true,

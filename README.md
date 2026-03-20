@@ -49,7 +49,7 @@ mono-repo-npm/
 │       ├── emailProcessor.ts       # SQS → send confirmation email
 │       └── aiWorker.ts             # SQS → generate AI summary
 │
-├── shared/                         # @repo/shared — single package, three subpaths
+├── lib/                            # @repo/lib — single package, three subpaths
 │   ├── drizzle.config.ts
 │   ├── package.json
 │   ├── tsconfig.json
@@ -61,13 +61,13 @@ mono-repo-npm/
 │   │       ├── ai.test.ts          # 5 tests
 │   │       └── email.test.ts       # 3 tests
 │   └── src/
-│       ├── core/                   # @repo/shared/core — ALL business logic
+│       ├── core/                   # @repo/lib/core — ALL business logic
 │       │   ├── types.ts            # AppContext (DI), input/result types
 │       │   ├── deals.ts            # createDeal(), getDealsByTenant()
 │       │   ├── activities.ts       # logActivity()
 │       │   └── index.ts
 │       │
-│       ├── db/                     # @repo/shared/db — Drizzle + pg pool
+│       ├── db/                     # @repo/lib/db — Drizzle + pg pool
 │       │   ├── client.ts           # getDb() singleton, PgBouncer-safe pool (max: 5)
 │       │   ├── seed.ts             # npm run db:seed
 │       │   ├── index.ts
@@ -77,7 +77,7 @@ mono-repo-npm/
 │       │       ├── activities.ts   # activity_type enum, activities table
 │       │       └── index.ts
 │       │
-│       └── services/               # @repo/shared/services — stub services
+│       └── services/               # @repo/lib/services — stub services
 │           ├── ai.ts               # AIService interface + StubAIService
 │           ├── email.ts            # EmailService interface + StubEmailService
 │           └── index.ts
@@ -118,14 +118,14 @@ cp .env.example .env
 ### 4. Push schema to the database
 
 ```bash
-npm run db:push -w @repo/shared
+npm run db:push -w @repo/lib
 ```
 
 ### 5. Seed the database (optional)
 
 ```bash
 DATABASE_URL=postgres://postgres:password@localhost:5432/realestate_dev \
-  npm run db:seed -w @repo/shared
+  npm run db:seed -w @repo/lib
 ```
 
 ### 6. Start the API
@@ -154,7 +154,7 @@ Or open `example-requests.http` in VS Code (REST Client extension) or any JetBra
 ### 8. Run tests
 
 ```bash
-npm test          # runs all 28 tests across shared + api
+npm test          # runs all 28 tests across lib + api
 ```
 
 ### 9. Build all packages
@@ -191,13 +191,13 @@ Scaffold the root `package.json` and install root dev dependencies:
 ```bash
 npm init -y
 npm pkg set name="saas" private=true
-npm pkg set workspaces='["shared","api","workers","infra/*"]' --json
+npm pkg set workspaces='["lib","api","workers","infra/*"]' --json
 npm pkg set engines.node=">=24" --json
-npm pkg set scripts.build="npm run build -w @repo/shared && npm run build -w @repo/api && npm run build -w @repo/workers && npm run build -w @repo/infra-cdk"
+npm pkg set scripts.build="npm run build -w @repo/lib && npm run build -w @repo/api && npm run build -w @repo/workers && npm run build -w @repo/infra-cdk"
 npm pkg set scripts.dev="npm run dev -w @repo/api"
 npm pkg set scripts.test="vitest run"
 npm pkg set scripts.test:watch="vitest"
-npm pkg set scripts.typecheck="npm run build -w @repo/shared && tsc --noEmit -p api/tsconfig.json && tsc --noEmit -p workers/tsconfig.json"
+npm pkg set scripts.typecheck="npm run build -w @repo/lib && tsc --noEmit -p api/tsconfig.json && tsc --noEmit -p workers/tsconfig.json"
 npm install -D typescript @types/node vitest
 ```
 
@@ -236,8 +236,8 @@ export default defineConfig({
     projects: [
       defineProject({
         test: {
-          name: "shared",
-          root: "./shared",
+          name: "lib",
+          root: "./lib",
           include: ["test/**/*.test.ts"],
           environment: "node",
           globals: true,
@@ -273,30 +273,30 @@ EOF
 
 ---
 
-### Step 2 — Create the `shared/` package
+### Step 2 — Create the `lib/` package
 
-`shared` is a single npm package with three subpath exports: `core`, `db`, and `services`.
+`lib` is a single npm package with three subpath exports: `core`, `db`, and `services`.
 
 ```bash
-mkdir -p shared/src/{core,db/schema,services} shared/test/{core,services}
-cd shared && npm init -y && cd ..
+mkdir -p lib/src/{core,db/schema,services} lib/test/{core,services}
+cd lib && npm init -y && cd ..
 ```
 
 Set the package name, mark it private, and add scripts:
 
 ```bash
-npm pkg set name="@repo/shared" private=true --prefix shared
-npm pkg set scripts.build="tsc" scripts.dev="tsc --watch" --prefix shared
-npm pkg set scripts.db:push="drizzle-kit push" scripts.db:studio="drizzle-kit studio" --prefix shared
-npm pkg set scripts.db:seed="tsx src/db/seed.ts" --prefix shared
-npm pkg set scripts.test="vitest run --project shared" --prefix shared
-npm pkg set scripts.test:watch="vitest --project shared" --prefix shared
+npm pkg set name="@repo/lib" private=true --prefix lib
+npm pkg set scripts.build="tsc" scripts.dev="tsc --watch" --prefix lib
+npm pkg set scripts.db:push="drizzle-kit push" scripts.db:studio="drizzle-kit studio" --prefix lib
+npm pkg set scripts.db:seed="tsx src/db/seed.ts" --prefix lib
+npm pkg set scripts.test="vitest run --project lib" --prefix lib
+npm pkg set scripts.test:watch="vitest --project lib" --prefix lib
 ```
 
-Add the subpath `exports` and `typesVersions` fields manually to `shared/package.json` — these are objects that `npm pkg set` doesn't handle cleanly:
+Add the subpath `exports` and `typesVersions` fields manually to `lib/package.json` — these are objects that `npm pkg set` doesn't handle cleanly:
 
 ```json
-// shared/package.json — add these two fields
+// lib/package.json — add these two fields
 "exports": {
   "./core":     { "types": "./dist/core/index.d.ts",     "default": "./dist/core/index.js"     },
   "./db":       { "types": "./dist/db/index.d.ts",       "default": "./dist/db/index.js"       },
@@ -312,21 +312,21 @@ Add the subpath `exports` and `typesVersions` fields manually to `shared/package
 ```
 
 > **Why `exports` + `typesVersions`?**
-> `exports` tells the Node.js runtime how to resolve `require('@repo/shared/core')` at runtime.
+> `exports` tells the Node.js runtime how to resolve `require('@repo/lib/core')` at runtime.
 > `typesVersions` tells TypeScript how to resolve the same import to the correct `.d.ts` file.
 > Both are needed because `"moduleResolution": "node"` doesn't read `exports` for types.
 
 Install dependencies into the workspace from the repo root:
 
 ```bash
-npm install -w @repo/shared drizzle-orm pg
-npm install -w @repo/shared -D @types/pg drizzle-kit tsx
+npm install -w @repo/lib drizzle-orm pg
+npm install -w @repo/lib -D @types/pg drizzle-kit tsx
 ```
 
 Create the tsconfig and Drizzle config:
 
 ```bash
-cat > shared/tsconfig.json << 'EOF'
+cat > lib/tsconfig.json << 'EOF'
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": { "rootDir": "./src", "outDir": "./dist" },
@@ -336,7 +336,7 @@ EOF
 ```
 
 ```bash
-cat > shared/drizzle.config.ts << 'EOF'
+cat > lib/drizzle.config.ts << 'EOF'
 import type { Config } from "drizzle-kit";
 export default {
   schema: "./src/db/schema/index.ts",
@@ -347,9 +347,9 @@ export default {
 EOF
 ```
 
-Now write the source files. Populate `shared/src/db/schema/`, `shared/src/db/`, `shared/src/core/`, and `shared/src/services/` — see the files in this repo for the full content.
+Now write the source files. Populate `lib/src/db/schema/`, `lib/src/db/`, `lib/src/core/`, and `lib/src/services/` — see the files in this repo for the full content.
 
-The key rule for imports **within** `shared/`: always use relative paths (e.g. `../db/index`). Never import `@repo/shared/*` from inside the same package.
+The key rule for imports **within** `lib/`: always use relative paths (e.g. `../db/index`). Never import `@repo/lib/*` from inside the same package.
 
 ---
 
@@ -369,18 +369,18 @@ npm pkg set scripts.test:watch="vitest --project api" --prefix api
 ```
 
 ```bash
-npm install -w @repo/api @repo/shared express zod
+npm install -w @repo/api @repo/lib express zod
 npm install -w @repo/api -D @types/express @types/supertest supertest tsx
 ```
 
-> **`"@repo/shared": "*"`** — npm workspaces resolves this to the local `shared/` package via symlink. The `*` means "any version", which is correct for local packages that share a lockfile.
+> **`"@repo/lib": "*"`** — npm workspaces resolves this to the local `lib/` package via symlink. The `*` means "any version", which is correct for local packages that share a lockfile.
 
 ```bash
 cat > api/tsconfig.json << 'EOF'
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": { "rootDir": "./src", "outDir": "./dist", "composite": false },
-  "references": [{ "path": "../shared" }],
+  "references": [{ "path": "../lib" }],
   "include": ["src"]
 }
 EOF
@@ -388,7 +388,7 @@ EOF
 
 Write `api/src/app.ts` (Express app without `server.listen`) and `api/src/index.ts` (imports `app`, starts the server, handles graceful shutdown). Splitting `app` from `index` lets tests import the app directly without binding a port.
 
-Write `api/src/routes/deals.ts` (thin route wrappers — no business logic in routes) and `api/test/routes/deals.test.ts` (supertest tests with `vi.mock` for `@repo/shared/core` and `@repo/shared/db`).
+Write `api/src/routes/deals.ts` (thin route wrappers — no business logic in routes) and `api/test/routes/deals.test.ts` (supertest tests with `vi.mock` for `@repo/lib/core` and `@repo/lib/db`).
 
 ---
 
@@ -407,7 +407,7 @@ npm pkg set scripts.build="tsc" scripts.dev="tsc --watch" --prefix workers
 > **No `main` field** — Lambda workers have no single entrypoint. Each handler file (`emailProcessor.ts`, `aiWorker.ts`) is its own entrypoint referenced directly by the CDK stack.
 
 ```bash
-npm install -w @repo/workers @repo/shared
+npm install -w @repo/workers @repo/lib
 npm install -w @repo/workers -D @types/aws-lambda
 ```
 
@@ -416,13 +416,13 @@ cat > workers/tsconfig.json << 'EOF'
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": { "rootDir": "./src", "outDir": "./dist", "composite": false },
-  "references": [{ "path": "../shared" }],
+  "references": [{ "path": "../lib" }],
   "include": ["src"]
 }
 EOF
 ```
 
-Write `workers/src/emailProcessor.ts` and `workers/src/aiWorker.ts`. Each is a thin SQS handler that calls into `@repo/shared/core` and `@repo/shared/services` — no business logic in handlers.
+Write `workers/src/emailProcessor.ts` and `workers/src/aiWorker.ts`. Each is a thin SQS handler that calls into `@repo/lib/core` and `@repo/lib/services` — no business logic in handlers.
 
 ---
 
@@ -517,7 +517,7 @@ EOF
 npm install
 ```
 
-npm workspaces installs everything from all `package.json` files into a single root `node_modules/` and symlinks each workspace package so `@repo/shared`, `@repo/api`, etc. resolve correctly.
+npm workspaces installs everything from all `package.json` files into a single root `node_modules/` and symlinks each workspace package so `@repo/lib`, `@repo/api`, etc. resolve correctly.
 
 ---
 
@@ -526,8 +526,8 @@ npm workspaces installs everything from all `package.json` files into a single r
 ```bash
 cp .env.example .env
 docker compose up -d               # starts Postgres on :5432, PgBouncer on :6432
-npm run db:push -w @repo/shared    # pushes Drizzle schema to the database
-npm run db:seed -w @repo/shared    # optional: inserts sample tenant + deal
+npm run db:push -w @repo/lib       # pushes Drizzle schema to the database
+npm run db:seed -w @repo/lib       # optional: inserts sample tenant + deal
 ```
 
 ---
@@ -535,7 +535,7 @@ npm run db:seed -w @repo/shared    # optional: inserts sample tenant + deal
 ### Step 9 — Verify everything works
 
 ```bash
-npm test          # 28 tests across shared + api
+npm test          # 28 tests across lib + api
 npm run build     # compiles all four packages in dependency order
 ```
 
@@ -558,25 +558,25 @@ curl -X POST http://localhost:3000/deals \
 
 ## Key Design Decisions
 
-### Single `shared/` package with subpath exports
+### Single `lib/` package with subpath exports
 
-Instead of three separate packages (`@repo/core`, `@repo/db`, `@repo/services`), all shared code lives in one package — `@repo/shared` — with three subpaths:
+Instead of three separate packages (`@repo/core`, `@repo/db`, `@repo/services`), all shared code lives in one package — `@repo/lib` — with three subpaths:
 
 ```
-@repo/shared/core      → business logic
-@repo/shared/db        → Drizzle client + schema
-@repo/shared/services  → AI and email stubs
+@repo/lib/core         → business logic
+@repo/lib/db           → Drizzle client + schema
+@repo/lib/services     → AI and email stubs
 ```
 
-Apps declare one dependency (`"@repo/shared": "*"`) and import by subpath. Subpaths are wired via `exports` and `typesVersions` in `shared/package.json` so both the Node.js runtime and TypeScript resolve correctly. Internal cross-references (`core` → `db`, `services` → `db`) use relative imports within the package, eliminating all circular workspace dependencies.
+Apps declare one dependency (`"@repo/lib": "*"`) and import by subpath. Subpaths are wired via `exports` and `typesVersions` in `lib/package.json` so both the Node.js runtime and TypeScript resolve correctly. Internal cross-references (`core` → `db`, `services` → `db`) use relative imports within the package, eliminating all circular workspace dependencies.
 
 ### No logic duplication
 
-`createDeal()` and `logActivity()` live only in `shared/src/core`. The Express route and both Lambda handlers are thin wrappers that call the exact same functions. Adding a new entrypoint (CLI, webhook, cron) never requires copying business logic.
+`createDeal()` and `logActivity()` live only in `lib/src/core`. The Express route and both Lambda handlers are thin wrappers that call the exact same functions. Adding a new entrypoint (CLI, webhook, cron) never requires copying business logic.
 
 ```
 POST /deals  ──┐
-               ├──► createDeal(input, ctx)  ◄── @repo/shared/core
+               ├──► createDeal(input, ctx)  ◄── @repo/lib/core
 SQS event  ────┘
 ```
 
@@ -595,15 +595,15 @@ This makes unit testing trivial — pass in a mock `db`, no database required. I
 
 ### Single vitest config
 
-All 28 tests across `shared` and `api` run from one config at the repo root:
+All 28 tests across `lib` and `api` run from one config at the repo root:
 
 ```bash
 npm test                          # all packages
-npm test -w @repo/shared          # shared only (uses --project shared internally)
+npm test -w @repo/lib             # lib only (uses --project lib internally)
 npm test -w @repo/api             # api only
 ```
 
-`vitest.config.ts` defines two named projects (`shared`, `api`) under `test.projects`, each with its own `root` and `include` globs. `vitest` itself lives only in root `devDependencies` — no per-package vitest install needed.
+`vitest.config.ts` defines two named projects (`lib`, `api`) under `test.projects`, each with its own `root` and `include` globs. `vitest` itself lives only in root `devDependencies` — no per-package vitest install needed.
 
 ### `app.ts` extracted from `index.ts`
 
@@ -611,7 +611,7 @@ npm test -w @repo/api             # api only
 
 ### PgBouncer-safe pool
 
-`shared/src/db/client.ts` configures the pg pool for PgBouncer transaction mode:
+`lib/src/db/client.ts` configures the pg pool for PgBouncer transaction mode:
 
 - `max: 5` — keeps server-side connections low (PgBouncer multiplexes the rest)
 - No prepared statements — drizzle-orm/node-postgres does not use them by default, which is required for transaction pooling mode
@@ -632,7 +632,7 @@ Each Lambda worker has its own SQS dead-letter queue (`maxReceiveCount: 3`) and 
 
 ### Stub services with swappable interfaces
 
-`@repo/shared/services` exports interfaces (`AIService`, `EmailService`) alongside stub implementations that log to the console. Swap the implementation — point to SES, Bedrock, Resend, etc. — without touching any caller.
+`@repo/lib/services` exports interfaces (`AIService`, `EmailService`) alongside stub implementations that log to the console. Swap the implementation — point to SES, Bedrock, Resend, etc. — without touching any caller.
 
 ---
 

@@ -1,4 +1,4 @@
-import { closeDb } from "@repo/shared/db";
+import { closeDb } from "@repo/lib/db";
 import { app } from "./app";
 
 const PORT = process.env.PORT ?? 3000;

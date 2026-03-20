@@ -6,7 +6,7 @@
     "composite": false
   },
   "references": [
-    { "path": "../shared" }
+    { "path": "../lib" }
   ],
   "include": ["src"]
 }

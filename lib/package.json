@@ -1,5 +1,5 @@
 {
-  "name": "@repo/shared",
+  "name": "@repo/lib",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -8,8 +8,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
-    "test": "vitest run --project shared",
-    "test:watch": "vitest --project shared"
+    "test": "vitest run --project lib",
+    "test:watch": "vitest --project lib"
   },
   "exports": {
     "./core": {

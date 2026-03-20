@@ -1,8 +1,8 @@
 /**
- * Seed script — run with: npm run db:seed -w @repo/shared
+ * Seed script — run with: npm run db:seed -w @repo/lib
  *
  * Requires DATABASE_URL env var pointing to a running Postgres instance.
- * Example: DATABASE_URL=postgres://localhost:5432/realestate_dev npm run db:seed -w @repo/shared
+ * Example: DATABASE_URL=postgres://localhost:5432/realestate_dev npm run db:seed -w @repo/lib
  */
 import { getDb, closeDb, schema } from "./index";
 

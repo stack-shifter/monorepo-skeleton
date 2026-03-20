@@ -6,18 +6,18 @@ WORKDIR /app
 
 # Copy workspace manifests first for better layer caching
 COPY package.json package-lock.json ./
-COPY shared/package.json ./shared/
+COPY lib/package.json ./lib/
 COPY api/package.json ./api/
 
 RUN npm ci --workspace=@repo/api --include-workspace-root
 
 # Copy source
 COPY tsconfig.base.json ./
-COPY shared/ ./shared/
+COPY lib/ ./lib/
 COPY api/ ./api/
 
-# Build shared first, then api
-RUN npm run build -w @repo/shared
+# Build lib first, then api
+RUN npm run build -w @repo/lib
 RUN npm run build -w @repo/api
 
 # ---- Runtime stage ----
@@ -30,7 +30,7 @@ ENV NODE_ENV=production
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/package-lock.json ./
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/shared/dist ./shared/dist
+COPY --from=builder /app/lib/dist ./lib/dist
 COPY --from=builder /app/api/dist ./api/dist
 
 EXPOSE 3000

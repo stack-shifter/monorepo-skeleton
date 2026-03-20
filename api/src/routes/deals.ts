@@ -1,7 +1,7 @@
 import { Router, type Router as ExpressRouter } from "express";
 import { z } from "zod";
-import { createDeal, getDealsByTenant } from "@repo/shared/core";
-import { getDb } from "@repo/shared/db";
+import { createDeal, getDealsByTenant } from "@repo/lib/core";
+import { getDb } from "@repo/lib/db";
 
 const router: ExpressRouter = Router();
 

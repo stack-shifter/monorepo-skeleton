@@ -3,17 +3,17 @@
   "private": true,
   "version": "0.0.1",
   "workspaces": [
-    "shared",
+    "lib",
     "api",
     "workers",
     "infra/*"
   ],
   "scripts": {
-    "build": "npm run build -w @repo/shared && npm run build -w @repo/api && npm run build -w @repo/workers && npm run build -w @repo/infra-cdk",
+    "build": "npm run build -w @repo/lib && npm run build -w @repo/api && npm run build -w @repo/workers && npm run build -w @repo/infra-cdk",
     "dev": "npm run dev -w @repo/api",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "npm run build -w @repo/shared && tsc --noEmit -p api/tsconfig.json && tsc --noEmit -p workers/tsconfig.json"
+    "typecheck": "npm run build -w @repo/lib && tsc --noEmit -p api/tsconfig.json && tsc --noEmit -p workers/tsconfig.json"
   },
   "engines": {
     "node": ">=24"
