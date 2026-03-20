@@ -534,3 +534,60 @@ Each Lambda worker has its own SQS dead-letter queue (`maxReceiveCount: 3`) and 
 ### Stub services with swappable interfaces
 
 `@repo/shared/services` exports interfaces (`AIService`, `EmailService`) alongside stub implementations that log to the console. Swap the implementation — point to SES, Bedrock, Resend, etc. — without touching any caller.
+
+---
+
+## CI / CD
+
+Two workflows live in `.github/workflows/`:
+
+| Workflow | Trigger | Jobs |
+|---|---|---|
+| `dev-branch.yml` | push / PR to any `dev-*` branch | typecheck → test → build → docker smoke build |
+| `release.yml` | push of a `v*.*.*` tag | typecheck → test → build → docker push to GHCR → CDK synth → GitHub Release |
+
+### dev-branch workflow
+
+Runs on every push to `dev-*` branches and on PRs targeting them. A second job does a Docker build (no push) as a smoke test to catch Dockerfile regressions early. Concurrent runs on the same branch are cancelled automatically.
+
+### release workflow
+
+Triggered by a semver tag (e.g. `v1.2.0`). After CI passes:
+
+1. **docker-publish** — builds and pushes the API image to GitHub Container Registry with `major`, `major.minor`, and full `major.minor.patch` tags.
+2. **cdk-synth** — synthesizes the CDK stacks to verify CloudFormation templates are valid before any deploy.
+3. **github-release** — creates a GitHub Release with auto-generated release notes from merged PRs.
+
+To cut a release:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+### Simulate locally with `act`
+
+[`act`](https://github.com/nektos/act) runs GitHub Actions workflows locally using Docker.
+
+```bash
+# Install (macOS)
+brew install act
+
+# Simulate the dev-branch CI push event
+act push --workflows .github/workflows/dev-branch.yml \
+         --secret-file .secrets.act
+
+# Simulate just the typecheck + test jobs (faster, skips Docker build)
+act push --workflows .github/workflows/dev-branch.yml \
+         --secret-file .secrets.act \
+         --job ci
+
+# Simulate a tag release (replace vX.Y.Z with any semver)
+act push --workflows .github/workflows/release.yml \
+         --secret-file .secrets.act \
+         --eventpath - <<'EOF'
+{"ref": "refs/tags/v1.0.0", "repository": {"full_name": "your-org/saas"}}
+EOF
+```
+
+> `.secrets.act` is committed with placeholder values. Copy it to `.secrets.act.local` (gitignored) and fill in real tokens if you need the Docker push or GitHub Release steps to actually run.
