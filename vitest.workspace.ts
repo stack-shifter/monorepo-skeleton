@@ -5,7 +5,7 @@ export default defineWorkspace([
     test: {
       name: "shared",
       root: "./shared",
-      include: ["src/**/__tests__/**/*.test.ts"],
+      include: ["test/**/*.test.ts"],
       environment: "node",
       globals: true,
     },
@@ -14,7 +14,7 @@ export default defineWorkspace([
     test: {
       name: "api",
       root: "./api",
-      include: ["src/**/__tests__/**/*.test.ts"],
+      include: ["test/**/*.test.ts"],
       environment: "node",
       globals: true,
     },

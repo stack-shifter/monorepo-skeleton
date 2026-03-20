@@ -14,63 +14,82 @@ A minimal, production-quality monorepo demonstrating:
 
 ```
 mono-repo-npm/
+├── .actrc                          # act local CI runner config
 ├── .env.example
 ├── .gitignore
-├── docker-compose.yml          # Postgres + PgBouncer for local dev
-├── example-requests.http       # Ready-to-run HTTP examples
-├── package.json                # Root — npm workspaces
-├── tsconfig.base.json          # Shared TS compiler options
+├── .secrets.act                    # placeholder secrets for act (safe to commit)
+├── docker-compose.yml              # Postgres + PgBouncer for local dev
+├── example-requests.http           # Ready-to-run HTTP examples
+├── package.json                    # Root — npm workspaces
+├── tsconfig.base.json              # Shared TS compiler options
+├── vitest.workspace.ts             # Single vitest config for all packages
 │
-├── api/                        # @repo/api — Express server
-│   ├── Dockerfile              # Multi-stage, App Runner / ECS ready
+├── .github/
+│   └── workflows/
+│       ├── dev-branch.yml          # CI on dev-* branches and PRs
+│       └── release.yml             # Build, push, CDK synth, GitHub Release on v* tags
+│
+├── api/                            # @repo/api — Express server
+│   ├── Dockerfile                  # Multi-stage, App Runner / ECS ready
 │   ├── package.json
 │   ├── tsconfig.json
+│   ├── test/                  # Tests — sibling to src/
+│   │   └── routes/
+│   │       └── deals.test.ts       # Supertest integration tests (11 tests)
 │   └── src/
-│       ├── index.ts            # Server bootstrap + graceful shutdown
+│       ├── app.ts                  # Express app (no server.listen — importable in tests)
+│       ├── index.ts                # Server bootstrap + graceful shutdown
 │       └── routes/
-│           └── deals.ts        # POST /deals, GET /deals (thin wrappers)
+│           └── deals.ts            # POST /deals, GET /deals (thin wrappers)
 │
-├── workers/                    # @repo/workers — Lambda handlers
+├── workers/                        # @repo/workers — Lambda handlers
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── src/
-│       ├── emailProcessor.ts   # SQS → send confirmation email
-│       └── aiWorker.ts         # SQS → generate AI summary
+│       ├── emailProcessor.ts       # SQS → send confirmation email
+│       └── aiWorker.ts             # SQS → generate AI summary
 │
-├── shared/                     # @repo/shared — single package, three subpaths
+├── shared/                         # @repo/shared — single package, three subpaths
 │   ├── drizzle.config.ts
 │   ├── package.json
 │   ├── tsconfig.json
+│   ├── test/                  # Tests — sibling to src/
+│   │   ├── core/
+│   │   │   ├── deals.test.ts       # 6 tests
+│   │   │   └── activities.test.ts  # 3 tests
+│   │   └── services/
+│   │       ├── ai.test.ts          # 5 tests
+│   │       └── email.test.ts       # 3 tests
 │   └── src/
-│       ├── core/               # @repo/shared/core — ALL business logic
-│       │   ├── types.ts        # AppContext (DI), input/result types
-│       │   ├── deals.ts        # createDeal(), getDealsByTenant()
-│       │   ├── activities.ts   # logActivity()
+│       ├── core/                   # @repo/shared/core — ALL business logic
+│       │   ├── types.ts            # AppContext (DI), input/result types
+│       │   ├── deals.ts            # createDeal(), getDealsByTenant()
+│       │   ├── activities.ts       # logActivity()
 │       │   └── index.ts
 │       │
-│       ├── db/                 # @repo/shared/db — Drizzle + pg pool
-│       │   ├── client.ts       # getDb() singleton, PgBouncer-safe pool (max: 5)
-│       │   ├── seed.ts         # npm run db:seed
+│       ├── db/                     # @repo/shared/db — Drizzle + pg pool
+│       │   ├── client.ts           # getDb() singleton, PgBouncer-safe pool (max: 5)
+│       │   ├── seed.ts             # npm run db:seed
 │       │   ├── index.ts
 │       │   └── schema/
 │       │       ├── tenants.ts
-│       │       ├── deals.ts    # deal_stage enum, deals table
+│       │       ├── deals.ts        # deal_stage enum, deals table
 │       │       ├── activities.ts   # activity_type enum, activities table
 │       │       └── index.ts
 │       │
-│       └── services/           # @repo/shared/services — stub services
-│           ├── ai.ts           # AIService interface + StubAIService
-│           ├── email.ts        # EmailService interface + StubEmailService
+│       └── services/               # @repo/shared/services — stub services
+│           ├── ai.ts               # AIService interface + StubAIService
+│           ├── email.ts            # EmailService interface + StubEmailService
 │           └── index.ts
 │
 └── infra/
-    └── cdk/                    # @repo/infra-cdk — CDK stacks
-        ├── cdk.json            # "app": "npx ts-node --prefer-ts-exts bin/app.ts"
+    └── cdk/                        # @repo/infra-cdk — CDK stacks
+        ├── cdk.json                # "app": "npx ts-node --prefer-ts-exts bin/app.ts"
         ├── bin/
-        │   └── app.ts          # CDK app entrypoint — instantiates stacks
+        │   └── app.ts              # CDK app entrypoint — instantiates stacks
         └── lib/
             └── stacks/
-                └── stack.ts    # RealEstateWorkerStack — EmailWorker + AIWorker
+                └── stack.ts        # RealEstateWorkerStack — EmailWorker + AIWorker
 ```
 
 ---
@@ -132,10 +151,16 @@ curl -X POST http://localhost:3000/deals \
 
 Or open `example-requests.http` in VS Code (REST Client extension) or any JetBrains IDE.
 
-### 8. Build all packages
+### 8. Run tests
 
 ```bash
-npm run build --workspaces
+npm test          # runs all 28 tests across shared + api
+```
+
+### 9. Build all packages
+
+```bash
+npm run build
 ```
 
 ---
@@ -147,7 +172,7 @@ This section walks through creating this repo from nothing. Every command is mea
 ### Prerequisites
 
 ```bash
-node --version   # 20+
+node --version   # 24+
 npm --version    # 10+
 docker --version # for local Postgres
 ```
@@ -167,10 +192,13 @@ Scaffold the root `package.json` and install root dev dependencies:
 npm init -y
 npm pkg set name="saas" private=true
 npm pkg set workspaces='["shared","api","workers","infra/*"]' --json
+npm pkg set engines.node=">=24" --json
 npm pkg set scripts.build="npm run build -w @repo/shared && npm run build -w @repo/api && npm run build -w @repo/workers && npm run build -w @repo/infra-cdk"
 npm pkg set scripts.dev="npm run dev -w @repo/api"
+npm pkg set scripts.test="vitest run"
+npm pkg set scripts.test:watch="vitest"
 npm pkg set scripts.typecheck="npm run build -w @repo/shared && tsc --noEmit -p api/tsconfig.json && tsc --noEmit -p workers/tsconfig.json"
-npm install -D typescript @types/node
+npm install -D typescript @types/node vitest
 ```
 
 Create the shared TypeScript base config that every workspace extends:
@@ -179,9 +207,9 @@ Create the shared TypeScript base config that every workspace extends:
 cat > tsconfig.base.json << 'EOF'
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2024",
     "module": "commonjs",
-    "lib": ["ES2022"],
+    "lib": ["ES2024"],
     "moduleResolution": "node",
     "strict": true,
     "esModuleInterop": true,
@@ -197,6 +225,35 @@ cat > tsconfig.base.json << 'EOF'
 EOF
 ```
 
+Create the vitest workspace config at the root — one config to run tests for all packages:
+
+```bash
+cat > vitest.workspace.ts << 'EOF'
+import { defineWorkspace } from "vitest/config";
+
+export default defineWorkspace([
+  {
+    test: {
+      name: "shared",
+      root: "./shared",
+      include: ["src/**/test/**/*.test.ts"],
+      environment: "node",
+      globals: true,
+    },
+  },
+  {
+    test: {
+      name: "api",
+      root: "./api",
+      include: ["src/**/test/**/*.test.ts"],
+      environment: "node",
+      globals: true,
+    },
+  },
+]);
+EOF
+```
+
 ```bash
 cat > .gitignore << 'EOF'
 node_modules/
@@ -206,6 +263,7 @@ dist/
 *.d.ts.map
 drizzle/
 cdk.out/
+.secrets.act.local
 EOF
 ```
 
@@ -216,7 +274,7 @@ EOF
 `shared` is a single npm package with three subpath exports: `core`, `db`, and `services`.
 
 ```bash
-mkdir -p shared/src/{core,db/schema,services}
+mkdir -p shared/src/{core,db/schema,services} shared/test/{core,services}
 cd shared && npm init -y && cd ..
 ```
 
@@ -226,7 +284,9 @@ Set the package name, mark it private, and add scripts:
 npm pkg set name="@repo/shared" private=true --prefix shared
 npm pkg set scripts.build="tsc" scripts.dev="tsc --watch" --prefix shared
 npm pkg set scripts.db:push="drizzle-kit push" scripts.db:studio="drizzle-kit studio" --prefix shared
-npm pkg set scripts.db:seed="ts-node src/db/seed.ts" --prefix shared
+npm pkg set scripts.db:seed="tsx src/db/seed.ts" --prefix shared
+npm pkg set scripts.test="vitest run --project shared" --prefix shared
+npm pkg set scripts.test:watch="vitest --project shared" --prefix shared
 ```
 
 Add the subpath `exports` and `typesVersions` fields manually to `shared/package.json` — these are objects that `npm pkg set` doesn't handle cleanly:
@@ -256,7 +316,7 @@ Install dependencies into the workspace from the repo root:
 
 ```bash
 npm install -w @repo/shared drizzle-orm pg
-npm install -w @repo/shared -D @types/pg drizzle-kit ts-node
+npm install -w @repo/shared -D @types/pg drizzle-kit tsx
 ```
 
 Create the tsconfig and Drizzle config:
@@ -292,19 +352,21 @@ The key rule for imports **within** `shared/`: always use relative paths (e.g. `
 ### Step 3 — Create the `api/` workspace
 
 ```bash
-mkdir -p api/src/routes
+mkdir -p api/src/routes api/test/routes
 cd api && npm init -y && cd ..
 ```
 
 ```bash
 npm pkg set name="@repo/api" private=true main="./dist/index.js" --prefix api
 npm pkg set scripts.build="tsc" scripts.start="node dist/index.js" --prefix api
-npm pkg set scripts.dev="ts-node-dev --respawn --transpile-only src/index.ts" --prefix api
+npm pkg set scripts.dev="tsx watch src/index.ts" --prefix api
+npm pkg set scripts.test="vitest run --project api" --prefix api
+npm pkg set scripts.test:watch="vitest --project api" --prefix api
 ```
 
 ```bash
 npm install -w @repo/api @repo/shared express zod
-npm install -w @repo/api -D @types/express ts-node-dev
+npm install -w @repo/api -D @types/express @types/supertest supertest tsx
 ```
 
 > **`"@repo/shared": "*"`** — npm workspaces resolves this to the local `shared/` package via symlink. The `*` means "any version", which is correct for local packages that share a lockfile.
@@ -320,7 +382,9 @@ cat > api/tsconfig.json << 'EOF'
 EOF
 ```
 
-Write `api/src/index.ts` (Express server + graceful shutdown) and `api/src/routes/deals.ts` (thin route wrappers). Routes import from `@repo/shared/core` and `@repo/shared/db` — no business logic in routes.
+Write `api/src/app.ts` (Express app without `server.listen`) and `api/src/index.ts` (imports `app`, starts the server, handles graceful shutdown). Splitting `app` from `index` lets tests import the app directly without binding a port.
+
+Write `api/src/routes/deals.ts` (thin route wrappers — no business logic in routes) and `api/src/routes/test/deals.test.ts` (supertest tests with `vi.mock` for `@repo/shared/core` and `@repo/shared/db`).
 
 ---
 
@@ -420,7 +484,30 @@ Write `infra/cdk/bin/app.ts` (creates the CDK `App`, instantiates stacks, calls 
 
 ---
 
-### Step 6 — Install all dependencies
+### Step 6 — Add GitHub Actions workflows
+
+```bash
+mkdir -p .github/workflows
+```
+
+Create `.github/workflows/dev-branch.yml` (triggers on `dev-*` branches, runs typecheck → test → build → Docker smoke build) and `.github/workflows/release.yml` (triggers on `v*.*.*` tags, runs CI then pushes to GHCR, synthesizes CDK, and creates a GitHub Release).
+
+Add an `.actrc` for local simulation and a `.secrets.act` with placeholder values:
+
+```bash
+cat > .actrc << 'EOF'
+--platform ubuntu-latest=catthehacker/ubuntu:act-latest
+--container-architecture linux/amd64
+EOF
+
+cat > .secrets.act << 'EOF'
+GITHUB_TOKEN=fake-token-for-local-act-runs
+EOF
+```
+
+---
+
+### Step 7 — Install all dependencies
 
 ```bash
 npm install
@@ -430,7 +517,7 @@ npm workspaces installs everything from all `package.json` files into a single r
 
 ---
 
-### Step 7 — Set up local infrastructure
+### Step 8 — Set up local infrastructure
 
 ```bash
 cp .env.example .env
@@ -441,24 +528,16 @@ npm run db:seed -w @repo/shared    # optional: inserts sample tenant + deal
 
 ---
 
-### Step 8 — Verify everything builds
+### Step 9 — Verify everything works
 
 ```bash
-npm run build
-```
-
-Expected output — four packages compile in dependency order:
-
-```
-@repo/shared    ✓
-@repo/api       ✓
-@repo/workers   ✓
-@repo/infra-cdk ✓
+npm test          # 28 tests across shared + api
+npm run build     # compiles all four packages in dependency order
 ```
 
 ---
 
-### Step 9 — Run the API and test it
+### Step 10 — Run the API and test it
 
 ```bash
 npm run dev -w @repo/api
@@ -509,6 +588,22 @@ interface AppContext {
 ```
 
 This makes unit testing trivial — pass in a mock `db`, no database required. It also enforces multi-tenancy at the type level: you can't call a core function without a `tenantId`.
+
+### Single vitest workspace config
+
+All 28 tests across `shared` and `api` run from one config at the repo root:
+
+```bash
+npm test                          # all packages
+npm test -w @repo/shared          # shared only (uses --project shared internally)
+npm test -w @repo/api             # api only
+```
+
+`vitest.workspace.ts` defines two named projects (`shared`, `api`) with their own `root` and `include` globs. `vitest` itself lives only in root `devDependencies` — no per-package vitest install needed.
+
+### `app.ts` extracted from `index.ts`
+
+`api/src/app.ts` creates and configures the Express app but never calls `server.listen`. `api/src/index.ts` imports it and starts the server. Tests import `app` directly via supertest — no port is bound, no cleanup needed.
 
 ### PgBouncer-safe pool
 

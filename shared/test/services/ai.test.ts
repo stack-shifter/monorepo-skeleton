@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { StubAIService } from "../ai";
+import { StubAIService } from "../../src/services/ai";
 
 describe("StubAIService.summarizeDeal", () => {
   const input = {

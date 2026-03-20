@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { logActivity } from "../activities";
-import type { AppContext } from "../types";
+import { logActivity } from "../../src/core/activities";
+import type { AppContext } from "../../src/core/types";
 
 function makeMockDb(activityId = "activity-123") {
   const returning = vi.fn().mockResolvedValue([{ id: activityId }]);

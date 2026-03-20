@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { StubEmailService } from "../email";
+import { StubEmailService } from "../../src/services/email";
 
 describe("StubEmailService.sendDealCreatedConfirmation", () => {
   const payload = {

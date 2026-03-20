@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createDeal, getDealsByTenant } from "../deals";
-import type { AppContext } from "../types";
+import { createDeal, getDealsByTenant } from "../../src/core/deals";
+import type { AppContext } from "../../src/core/types";
 
 // Build a mock db where each .insert() call gets its own fluent chain
 // so we can return different values for the deal insert vs activity insert.

@@ -12,7 +12,7 @@ vi.mock("@repo/shared/db", () => ({
   getDb: vi.fn().mockReturnValue({}),
 }));
 
-import { app } from "../../app";
+import { app } from "../../src/app";
 import { createDeal, getDealsByTenant } from "@repo/shared/core";
 
 const TENANT_ID = "tenant-123";
