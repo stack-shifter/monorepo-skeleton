@@ -2,7 +2,7 @@
   "name": "@repo/infra-cdk",
   "version": "0.0.1",
   "private": true,
-  "main": "./dist/stack.js",
+  "main": "./dist/app.js",
   "scripts": {
     "build": "tsc",
     "cdk": "cdk",
