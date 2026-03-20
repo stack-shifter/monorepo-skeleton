@@ -12,13 +12,13 @@
   },
   "dependencies": {
     "@repo/shared": "*",
-    "express": "^4.18.2",
-    "zod": "^3.22.4"
+    "express": "^5.2.1",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
+    "@types/express": "^5.0.6",
     "@types/supertest": "^7.2.0",
     "supertest": "^7.2.2",
-    "tsx": "^4.19.2"
+    "tsx": "^4.21.0"
   }
 }

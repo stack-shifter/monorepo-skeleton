@@ -1,7 +1,7 @@
-import express from "express";
+import express, { type Express } from "express";
 import dealsRouter from "./routes/deals";
 
-export const app = express();
+export const app: Express = express();
 
 app.use(express.json());
 

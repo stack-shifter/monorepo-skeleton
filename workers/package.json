@@ -10,6 +10,6 @@
     "@repo/shared": "*"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.133"
+    "@types/aws-lambda": "^8.10.161"
   }
 }

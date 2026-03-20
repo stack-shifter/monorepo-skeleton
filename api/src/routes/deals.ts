@@ -1,9 +1,9 @@
-import { Router } from "express";
+import { Router, type Router as ExpressRouter } from "express";
 import { z } from "zod";
 import { createDeal, getDealsByTenant } from "@repo/shared/core";
 import { getDb } from "@repo/shared/db";
 
-const router = Router();
+const router: ExpressRouter = Router();
 
 const CreateDealSchema = z.object({
   title: z.string().min(1).max(255),
