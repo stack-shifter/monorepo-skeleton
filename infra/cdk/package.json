@@ -1,0 +1,20 @@
+{
+  "name": "@repo/infra-cdk",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/stack.js",
+  "scripts": {
+    "build": "tsc",
+    "cdk": "cdk",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.130.0",
+    "constructs": "^10.3.0"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.130.0",
+    "esbuild": "^0.20.2"
+  }
+}

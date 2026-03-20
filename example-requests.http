@@ -1,0 +1,24 @@
+### Create a deal
+# Use with VS Code REST Client or JetBrains HTTP Client
+# Requires the API to be running: npm run dev -w @repo/api
+
+POST http://localhost:3000/deals
+Content-Type: application/json
+x-tenant-id: your-tenant-uuid-here
+
+{
+  "title": "123 Main St — Buyer Representation",
+  "contactName": "Jane Smith",
+  "contactEmail": "jane.smith@example.com",
+  "value": "425000.00",
+  "stage": "qualified"
+}
+
+### Get all deals for a tenant
+
+GET http://localhost:3000/deals
+x-tenant-id: your-tenant-uuid-here
+
+### Health check
+
+GET http://localhost:3000/health

@@ -1,0 +1,19 @@
+{
+  "name": "real-estate-saas",
+  "private": true,
+  "version": "0.0.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "infra/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev": "npm run dev -w @repo/api",
+    "typecheck": "tsc --noEmit --project tsconfig.base.json"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "typescript": "^5.3.3"
+  }
+}
