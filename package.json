@@ -11,6 +11,8 @@
   "scripts": {
     "build": "npm run build -w @repo/shared && npm run build -w @repo/api && npm run build -w @repo/workers && npm run build -w @repo/infra-cdk",
     "dev": "npm run dev -w @repo/api",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "npm run build -w @repo/shared && tsc --noEmit -p api/tsconfig.json && tsc --noEmit -p workers/tsconfig.json"
   },
   "engines": {
@@ -18,6 +20,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.0"
   }
 }
