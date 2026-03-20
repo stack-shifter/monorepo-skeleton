@@ -41,12 +41,12 @@ export class RealEstateWorkerStack extends cdk.Stack {
       // in the Lambda zip, which shrinks cold-start size significantly.
       externalModules: [],
       // esbuild target matches the Lambda runtime
-      target: "node20",
+      target: "node24",
       format: OutputFormat.CJS,
     };
 
     const sharedFunctionProps = {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       timeout: cdk.Duration.seconds(30),
       memorySize: 256,
       bundling: sharedBundling,
