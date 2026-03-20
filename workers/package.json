@@ -1,0 +1,16 @@
+{
+  "name": "@repo/workers",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@repo/shared": "*"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.133"
+  }
+}

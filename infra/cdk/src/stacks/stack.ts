@@ -29,7 +29,7 @@ export class RealEstateWorkerStack extends cdk.Stack {
     // Resolve from repo root so this path is stable regardless of where
     // this file sits within infra/
     const repoRoot = path.resolve(__dirname, "../../..");
-    const workersRoot = path.join(repoRoot, "apps/workers/src");
+    const workersRoot = path.join(repoRoot, "workers/src");
 
     // Shared bundling config applied to every NodejsFunction in this stack.
     // esbuild runs at cdk synth time — no manual tsc build step needed.
