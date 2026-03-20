@@ -1,5 +1,5 @@
 import * as cdk from "aws-cdk-lib";
-import { RealEstateWorkerStack } from "./stacks/stack";
+import { RealEstateWorkerStack } from "../lib/stacks/stack";
 
 const app = new cdk.App();
 

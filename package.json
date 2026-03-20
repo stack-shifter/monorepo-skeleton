@@ -1,17 +1,17 @@
 {
-  "name": "real-estate-saas",
+  "name": "saas",
   "private": true,
   "version": "0.0.1",
   "workspaces": [
+    "shared",
     "api",
     "workers",
-    "shared",
     "infra/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build -w @repo/shared && npm run build -w @repo/api && npm run build -w @repo/workers && npm run build -w @repo/infra-cdk",
     "dev": "npm run dev -w @repo/api",
-    "typecheck": "tsc --noEmit --project tsconfig.base.json"
+    "typecheck": "npm run build -w @repo/shared && tsc --noEmit -p api/tsconfig.json && tsc --noEmit -p workers/tsconfig.json"
   },
   "devDependencies": {
     "@types/node": "^20.11.5",

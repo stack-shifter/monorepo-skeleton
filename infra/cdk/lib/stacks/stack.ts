@@ -28,7 +28,8 @@ export class RealEstateWorkerStack extends cdk.Stack {
 
     // Resolve from repo root so this path is stable regardless of where
     // this file sits within infra/
-    const repoRoot = path.resolve(__dirname, "../../..");
+    // __dirname = infra/cdk/lib/stacks → 4 levels up to repo root
+    const repoRoot = path.resolve(__dirname, "../../../..");
     const workersRoot = path.join(repoRoot, "workers/src");
 
     // Shared bundling config applied to every NodejsFunction in this stack.

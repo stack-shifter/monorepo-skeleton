@@ -1,8 +1,8 @@
 {
-  "app": "node dist/app.js",
+  "app": "npx ts-node --prefer-ts-exts bin/app.ts",
   "watch": {
     "include": ["**"],
-    "exclude": ["README.md", "cdk*.json", "**/*.d.ts", "**/*.js", "tsconfig.json", "node_modules"]
+    "exclude": ["README.md", "cdk*.json", "**/*.d.ts", "**/*.js", "tsconfig.json", "node_modules", "cdk.out"]
   },
   "context": {
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
