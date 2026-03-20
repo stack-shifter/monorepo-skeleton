@@ -22,7 +22,7 @@ mono-repo-npm/
 ├── example-requests.http           # Ready-to-run HTTP examples
 ├── package.json                    # Root — npm workspaces
 ├── tsconfig.base.json              # Shared TS compiler options
-├── vitest.workspace.ts             # Single vitest config for all packages
+├── vitest.config.ts                # Single vitest config for all packages
 │
 ├── .github/
 │   └── workflows/
@@ -207,9 +207,9 @@ Create the shared TypeScript base config that every workspace extends:
 cat > tsconfig.base.json << 'EOF'
 {
   "compilerOptions": {
-    "target": "ES2024",
+    "target": "ES2022",
     "module": "commonjs",
-    "lib": ["ES2024"],
+    "lib": ["ES2022"],
     "moduleResolution": "node",
     "strict": true,
     "esModuleInterop": true,
@@ -225,32 +225,36 @@ cat > tsconfig.base.json << 'EOF'
 EOF
 ```
 
-Create the vitest workspace config at the root — one config to run tests for all packages:
+Create the vitest config at the root — one config to run tests for all packages:
 
 ```bash
-cat > vitest.workspace.ts << 'EOF'
-import { defineWorkspace } from "vitest/config";
+cat > vitest.config.ts << 'EOF'
+import { defineConfig, defineProject } from "vitest/config";
 
-export default defineWorkspace([
-  {
-    test: {
-      name: "shared",
-      root: "./shared",
-      include: ["src/**/test/**/*.test.ts"],
-      environment: "node",
-      globals: true,
-    },
+export default defineConfig({
+  test: {
+    projects: [
+      defineProject({
+        test: {
+          name: "shared",
+          root: "./shared",
+          include: ["test/**/*.test.ts"],
+          environment: "node",
+          globals: true,
+        },
+      }),
+      defineProject({
+        test: {
+          name: "api",
+          root: "./api",
+          include: ["test/**/*.test.ts"],
+          environment: "node",
+          globals: true,
+        },
+      }),
+    ],
   },
-  {
-    test: {
-      name: "api",
-      root: "./api",
-      include: ["src/**/test/**/*.test.ts"],
-      environment: "node",
-      globals: true,
-    },
-  },
-]);
+});
 EOF
 ```
 
@@ -384,7 +388,7 @@ EOF
 
 Write `api/src/app.ts` (Express app without `server.listen`) and `api/src/index.ts` (imports `app`, starts the server, handles graceful shutdown). Splitting `app` from `index` lets tests import the app directly without binding a port.
 
-Write `api/src/routes/deals.ts` (thin route wrappers — no business logic in routes) and `api/src/routes/test/deals.test.ts` (supertest tests with `vi.mock` for `@repo/shared/core` and `@repo/shared/db`).
+Write `api/src/routes/deals.ts` (thin route wrappers — no business logic in routes) and `api/test/routes/deals.test.ts` (supertest tests with `vi.mock` for `@repo/shared/core` and `@repo/shared/db`).
 
 ---
 
@@ -589,7 +593,7 @@ interface AppContext {
 
 This makes unit testing trivial — pass in a mock `db`, no database required. It also enforces multi-tenancy at the type level: you can't call a core function without a `tenantId`.
 
-### Single vitest workspace config
+### Single vitest config
 
 All 28 tests across `shared` and `api` run from one config at the repo root:
 
@@ -599,7 +603,7 @@ npm test -w @repo/shared          # shared only (uses --project shared internall
 npm test -w @repo/api             # api only
 ```
 
-`vitest.workspace.ts` defines two named projects (`shared`, `api`) with their own `root` and `include` globs. `vitest` itself lives only in root `devDependencies` — no per-package vitest install needed.
+`vitest.config.ts` defines two named projects (`shared`, `api`) under `test.projects`, each with its own `root` and `include` globs. `vitest` itself lives only in root `devDependencies` — no per-package vitest install needed.
 
 ### `app.ts` extracted from `index.ts`
 
