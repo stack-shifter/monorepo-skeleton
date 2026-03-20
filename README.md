@@ -131,7 +131,7 @@ DATABASE_URL=postgres://postgres:password@localhost:5432/realestate_dev \
 ### 6. Start the API
 
 ```bash
-npm run dev -w @repo/api
+npm run dev
 ```
 
 ### 7. Create a deal
@@ -194,7 +194,7 @@ npm pkg set name="saas" private=true
 npm pkg set workspaces='["lib","api","workers","infra/*"]' --json
 npm pkg set engines.node=">=24" --json
 npm pkg set scripts.build="npm run build -w @repo/lib && npm run build -w @repo/api && npm run build -w @repo/workers && npm run build -w @repo/infra-cdk"
-npm pkg set scripts.dev="npm run dev -w @repo/api"
+npm pkg set scripts.dev="npm run build -w @repo/lib && npm run dev -w @repo/api"
 npm pkg set scripts.test="vitest run"
 npm pkg set scripts.test:watch="vitest"
 npm pkg set scripts.typecheck="npm run build -w @repo/lib && tsc --noEmit -p api/tsconfig.json && tsc --noEmit -p workers/tsconfig.json"
@@ -544,7 +544,7 @@ npm run build     # compiles all four packages in dependency order
 ### Step 10 — Run the API and test it
 
 ```bash
-npm run dev -w @repo/api
+npm run dev
 ```
 
 ```bash
