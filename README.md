@@ -2,7 +2,8 @@
 
 A minimal, production-quality monorepo demonstrating:
 
-- **Express API** — container-friendly (App Runner / ECS)
+- **Next.js 16 UI** — App Router frontend, containerized for ECS Fargate
+- **Express API** — containerized backend for ECS Fargate
 - **Lambda workers** — CDK-deployable, SQS-triggered
 - **Shared business logic** — zero duplication between API and workers
 - **Drizzle ORM + Postgres** — PgBouncer-safe pool configuration
@@ -26,11 +27,11 @@ mono-repo-npm/
 │
 ├── .github/
 │   └── workflows/
-│       ├── dev-branch.yml          # CI on dev-* branches and PRs
-│       └── release.yml             # Build, push, CDK synth, GitHub Release on v* tags
+│       ├── dev-branch.yml          # CI + Docker smoke builds on dev-* branches and PRs
+│       └── release.yml             # Build, push API/UI images, CDK synth, GitHub Release on v* tags
 │
 ├── api/                            # @repo/api — Express server
-│   ├── Dockerfile                  # Multi-stage, App Runner / ECS ready
+│   ├── Dockerfile                  # Multi-stage image for ECS Fargate
 │   ├── package.json
 │   ├── tsconfig.json
 │   ├── test/                  # Tests — sibling to src/
@@ -40,7 +41,21 @@ mono-repo-npm/
 │       ├── app.ts                  # Express app (no server.listen — importable in tests)
 │       ├── index.ts                # Server bootstrap + graceful shutdown
 │       └── routes/
-│           └── deals.ts            # POST /deals, GET /deals (thin wrappers)
+│           └── deals.ts            # POST /api/deals, GET /api/deals
+│
+├── ui/                             # @repo/ui — Next.js 16 frontend
+│   ├── Dockerfile                  # Multi-stage standalone image for ECS Fargate
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── next.config.ts              # standalone output for container runtime
+│   ├── app/
+│   │   ├── layout.tsx
+│   │   ├── page.tsx                # Landing page + API health panel
+│   │   ├── globals.css
+│   │   └── _health/
+│   │       └── route.ts            # ECS health check endpoint
+│   └── lib/
+│       └── api.ts                  # Server-side API client
 │
 ├── workers/                        # @repo/workers — Lambda handlers
 │   ├── package.json
@@ -89,7 +104,8 @@ mono-repo-npm/
         │   └── app.ts              # CDK app entrypoint — instantiates stacks
         └── lib/
             └── stacks/
-                └── stack.ts        # RealEstateWorkerStack — EmailWorker + AIWorker
+                ├── web-stack.ts     # ECS Fargate UI + API behind one ALB
+                └── worker-stack.ts  # RealEstateWorkerStack — EmailWorker + AIWorker
 ```
 
 ---
@@ -131,13 +147,29 @@ DATABASE_URL=postgres://postgres:password@localhost:5432/realestate_dev \
 ### 6. Start the API
 
 ```bash
-npm run dev
+npm run dev:api
 ```
 
-### 7. Create a deal
+### 7. Start the UI
 
 ```bash
-curl -X POST http://localhost:3000/deals \
+npm run dev:ui
+```
+
+### 8. Start both together
+
+```bash
+npm run dev:all
+```
+
+### 9. Open the UI
+
+Visit `http://localhost:3000`. The landing page performs a server-side request to `API_BASE_URL` and shows the backend health state.
+
+### 10. Create a deal
+
+```bash
+curl -X POST http://localhost:3001/api/deals \
   -H "Content-Type: application/json" \
   -H "x-tenant-id: <your-tenant-uuid>" \
   -d '{
@@ -151,13 +183,13 @@ curl -X POST http://localhost:3000/deals \
 
 Or open `example-requests.http` in VS Code (REST Client extension) or any JetBrains IDE.
 
-### 8. Run tests
+### 11. Run tests
 
 ```bash
 npm test          # runs all 28 tests across lib + api
 ```
 
-### 9. Build all packages
+### 12. Build all packages
 
 ```bash
 npm run build
@@ -191,14 +223,16 @@ Scaffold the root `package.json` and install root dev dependencies:
 ```bash
 npm init -y
 npm pkg set name="saas" private=true
-npm pkg set workspaces='["lib","api","workers","infra/*"]' --json
+npm pkg set workspaces='["lib","api","ui","workers","infra/*"]' --json
 npm pkg set engines.node=">=24" --json
-npm pkg set scripts.build="npm run build -w @repo/lib && npm run build -w @repo/api && npm run build -w @repo/workers && npm run build -w @repo/infra-cdk"
-npm pkg set scripts.dev="npm run build -w @repo/lib && npm run dev -w @repo/api"
+npm pkg set scripts.build="npm run build -w @repo/lib && npm run build -w @repo/api && npm run build -w @repo/ui && npm run build -w @repo/workers && npm run build -w @repo/infra-cdk"
+npm pkg set scripts.dev:api="npm run build -w @repo/lib && npm run dev -w @repo/api"
+npm pkg set scripts.dev:ui="npm run dev -w @repo/ui"
+npm pkg set scripts.dev:all="concurrently -k -n api,ui -c blue,green \"npm:dev:api\" \"npm:dev:ui\""
 npm pkg set scripts.test="vitest run"
 npm pkg set scripts.test:watch="vitest"
-npm pkg set scripts.typecheck="npm run build -w @repo/lib && tsc --noEmit -p api/tsconfig.json && tsc --noEmit -p workers/tsconfig.json"
-npm install -D typescript @types/node vitest
+npm pkg set scripts.typecheck="npm run build -w @repo/lib && tsc --noEmit -p api/tsconfig.json && tsc --noEmit -p ui/tsconfig.json && tsc --noEmit -p workers/tsconfig.json && tsc --noEmit -p infra/cdk/tsconfig.json"
+npm install -D typescript @types/node vitest concurrently
 ```
 
 Create the shared TypeScript base config that every workspace extends:
@@ -482,9 +516,9 @@ Update `cdk.json` to point at the renamed entrypoint:
 npm pkg set app="npx ts-node --prefer-ts-exts bin/app.ts" --prefix infra/cdk
 ```
 
-Write `infra/cdk/bin/app.ts` (creates the CDK `App`, instantiates stacks, calls `app.synth()`) and replace `infra/cdk/lib/stacks/stack.ts` with the `RealEstateWorkerStack` definition using `NodejsFunction`, SQS queues, and DLQs.
+Write `infra/cdk/bin/app.ts` (creates the CDK `App`, instantiates web + worker stacks, calls `app.synth()`) and replace the generated stack with `web-stack.ts` and `worker-stack.ts`.
 
-> **`repoRoot` path in `stack.ts`**: `__dirname` at runtime points to `infra/cdk/lib/stacks`, which is 4 levels deep. Use `path.resolve(__dirname, "../../../..")` to reach the repo root — one extra `..` compared to what you might expect.
+> **`repoRoot` path in `worker-stack.ts`**: `__dirname` at runtime points to `infra/cdk/lib/stacks`, which is 4 levels deep. Use `path.resolve(__dirname, "../../../..")` to reach the repo root — one extra `..` compared to what you might expect.
 
 ---
 
@@ -536,19 +570,19 @@ npm run db:seed -w @repo/lib       # optional: inserts sample tenant + deal
 
 ```bash
 npm test          # 28 tests across lib + api
-npm run build     # compiles all four packages in dependency order
+npm run build     # compiles lib, api, ui, workers, and infra in dependency order
 ```
 
 ---
 
-### Step 10 — Run the API and test it
+### Step 10 — Run the web apps and test them
 
 ```bash
-npm run dev
+npm run dev:all
 ```
 
 ```bash
-curl -X POST http://localhost:3000/deals \
+curl -X POST http://localhost:3001/api/deals \
   -H "Content-Type: application/json" \
   -H "x-tenant-id: <tenant-uuid-from-seed>" \
   -d '{"title":"123 Main St","contactName":"Jane Smith","contactEmail":"jane@example.com","value":"425000.00","stage":"qualified"}'
@@ -575,9 +609,9 @@ Apps declare one dependency (`"@repo/lib": "*"`) and import by subpath. Subpaths
 `createDeal()` and `logActivity()` live only in `lib/src/core`. The Express route and both Lambda handlers are thin wrappers that call the exact same functions. Adding a new entrypoint (CLI, webhook, cron) never requires copying business logic.
 
 ```
-POST /deals  ──┐
-               ├──► createDeal(input, ctx)  ◄── @repo/lib/core
-SQS event  ────┘
+POST /api/deals  ──┐
+                   ├──► createDeal(input, ctx)  ◄── @repo/lib/core
+SQS event      ────┘
 ```
 
 ### Dependency injection via `AppContext`
@@ -620,7 +654,24 @@ Connect to Postgres directly (port `5432`) or through PgBouncer (port `6432`) �
 
 ### Graceful shutdown
 
-The Express server calls `server.close()` followed by `closeDb()` on `SIGTERM`/`SIGINT`. This drains in-flight requests and releases the pg pool before the process exits — required for zero-downtime rolling deploys on App Runner or ECS.
+The Express server calls `server.close()` followed by `closeDb()` on `SIGTERM`/`SIGINT`. This drains in-flight requests and releases the pg pool before the process exits — required for zero-downtime rolling deploys on ECS Fargate.
+
+### Production architecture
+
+Production uses three execution targets:
+
+- **UI** — a Next.js 16 standalone container deployed to ECS Fargate
+- **API** — an Express container deployed to ECS Fargate
+- **Workers** — Lambda functions provisioned by CDK and triggered by SQS
+
+The CDK web stack provisions a shared ALB, path-routes `/api/*` to the API service, and sends all other traffic to the UI service. The `/api` prefix matters because the browser sees one public domain while two different services sit behind the load balancer: the frontend owns page routes like `/`, `/pricing`, or `/dashboard`, and the backend owns API routes. Keeping the API under `/api` avoids route collisions, keeps the ALB rules simple, and matches the common Next.js plus backend deployment shape on one host.
+
+Locally, the repo uses a frontend-first port layout:
+
+- **UI** — `http://localhost:3000`
+- **API** — `http://localhost:3001/api`
+
+That mirrors the production model closely enough to avoid surprises: the UI stays the browser entrypoint, while the API remains namespaced under `/api`. The UI reads `API_BASE_URL` at runtime so the same image can be reused across environments. The API pulls `DATABASE_URL` from Secrets Manager at task start.
 
 ### Lambda: `NodejsFunction` + esbuild, no manual build step
 
@@ -642,19 +693,19 @@ Two workflows live in `.github/workflows/`:
 
 | Workflow | Trigger | Jobs |
 |---|---|---|
-| `dev-branch.yml` | push / PR to any `dev-*` branch | typecheck → test → build → docker smoke build |
-| `release.yml` | push of a `v*.*.*` tag | typecheck → test → build → docker push to GHCR → CDK synth → GitHub Release |
+| `dev-branch.yml` | push / PR to any `dev-*` branch | typecheck → test → build → API/UI docker smoke builds |
+| `release.yml` | push of a `v*.*.*` tag | typecheck → test → build → publish API/UI images to GHCR → CDK synth → GitHub Release |
 
 ### dev-branch workflow
 
-Runs on every push to `dev-*` branches and on PRs targeting them. A second job does a Docker build (no push) as a smoke test to catch Dockerfile regressions early. Concurrent runs on the same branch are cancelled automatically.
+Runs on every push to `dev-*` branches and on PRs targeting them. A second job builds both container images without pushing them so Dockerfile regressions are caught before release. Concurrent runs on the same branch are cancelled automatically.
 
 ### release workflow
 
 Triggered by a semver tag (e.g. `v1.2.0`). After CI passes:
 
-1. **docker-publish** — builds and pushes the API image to GitHub Container Registry with `major`, `major.minor`, and full `major.minor.patch` tags.
-2. **cdk-synth** — synthesizes the CDK stacks to verify CloudFormation templates are valid before any deploy.
+1. **docker-publish** — builds and pushes the API and UI images to GitHub Container Registry with `major`, `major.minor`, and full `major.minor.patch` tags.
+2. **cdk-synth** — synthesizes the ECS web stack and Lambda worker stack to verify CloudFormation templates are valid before any deploy.
 3. **github-release** — creates a GitHub Release with auto-generated release notes from merged PRs.
 
 To cut a release:

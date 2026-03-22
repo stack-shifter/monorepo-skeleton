@@ -1,7 +1,7 @@
 import { closeDb } from "@repo/lib/db";
 import { app } from "./app";
 
-const PORT = process.env.PORT ?? 3000;
+const PORT = process.env.PORT ?? 3001;
 
 const server = app.listen(PORT, () => {
   console.log(`[api] Listening on http://0.0.0.0:${PORT}`);

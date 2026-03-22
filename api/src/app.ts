@@ -5,11 +5,12 @@ export const app: Express = express();
 
 app.use(express.json());
 
-app.get("/health", (_req, res) => {
+function healthHandler(_req: express.Request, res: express.Response) {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
+}
 
-app.use("/deals", dealsRouter);
+app.get("/api/health", healthHandler);
+app.use("/api/deals", dealsRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error("[api] Unhandled error", err);

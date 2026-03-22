@@ -27,12 +27,12 @@ const validBody = {
 
 beforeEach(() => vi.clearAllMocks());
 
-describe("POST /deals", () => {
+describe("POST /api/deals", () => {
   it("returns 201 with dealId and activityId on valid input", async () => {
     vi.mocked(createDeal).mockResolvedValue({ dealId: "deal-1", activityId: "act-1" });
 
     const res = await request(app)
-      .post("/deals")
+      .post("/api/deals")
       .set("x-tenant-id", TENANT_ID)
       .send(validBody);
 
@@ -44,7 +44,7 @@ describe("POST /deals", () => {
     vi.mocked(createDeal).mockResolvedValue({ dealId: "deal-1", activityId: "act-1" });
 
     await request(app)
-      .post("/deals")
+      .post("/api/deals")
       .set("x-tenant-id", TENANT_ID)
       .send(validBody);
 
@@ -55,14 +55,14 @@ describe("POST /deals", () => {
   });
 
   it("returns 400 when x-tenant-id header is missing", async () => {
-    const res = await request(app).post("/deals").send(validBody);
+    const res = await request(app).post("/api/deals").send(validBody);
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("Missing x-tenant-id header");
   });
 
   it("returns 400 when title is empty", async () => {
     const res = await request(app)
-      .post("/deals")
+      .post("/api/deals")
       .set("x-tenant-id", TENANT_ID)
       .send({ ...validBody, title: "" });
     expect(res.status).toBe(400);
@@ -71,7 +71,7 @@ describe("POST /deals", () => {
 
   it("returns 400 when contactEmail is not a valid email", async () => {
     const res = await request(app)
-      .post("/deals")
+      .post("/api/deals")
       .set("x-tenant-id", TENANT_ID)
       .send({ ...validBody, contactEmail: "not-an-email" });
     expect(res.status).toBe(400);
@@ -79,7 +79,7 @@ describe("POST /deals", () => {
 
   it("returns 400 when value is not a numeric string", async () => {
     const res = await request(app)
-      .post("/deals")
+      .post("/api/deals")
       .set("x-tenant-id", TENANT_ID)
       .send({ ...validBody, value: "$425,000" });
     expect(res.status).toBe(400);
@@ -87,20 +87,20 @@ describe("POST /deals", () => {
 
   it("returns 400 when stage is not a valid enum value", async () => {
     const res = await request(app)
-      .post("/deals")
+      .post("/api/deals")
       .set("x-tenant-id", TENANT_ID)
       .send({ ...validBody, stage: "unknown" });
     expect(res.status).toBe(400);
   });
 });
 
-describe("GET /deals", () => {
+describe("GET /api/deals", () => {
   it("returns 200 with a deals array", async () => {
     const mockDeals = [{ id: "deal-1", title: "Test Deal" }];
     vi.mocked(getDealsByTenant).mockResolvedValue(mockDeals as any);
 
     const res = await request(app)
-      .get("/deals")
+      .get("/api/deals")
       .set("x-tenant-id", TENANT_ID);
 
     expect(res.status).toBe(200);
@@ -110,7 +110,7 @@ describe("GET /deals", () => {
   it("calls getDealsByTenant with the correct tenantId", async () => {
     vi.mocked(getDealsByTenant).mockResolvedValue([]);
 
-    await request(app).get("/deals").set("x-tenant-id", TENANT_ID);
+    await request(app).get("/api/deals").set("x-tenant-id", TENANT_ID);
 
     expect(getDealsByTenant).toHaveBeenCalledWith(
       expect.objectContaining({ tenantId: TENANT_ID })
@@ -118,15 +118,15 @@ describe("GET /deals", () => {
   });
 
   it("returns 400 when x-tenant-id header is missing", async () => {
-    const res = await request(app).get("/deals");
+    const res = await request(app).get("/api/deals");
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("Missing x-tenant-id header");
   });
 });
 
-describe("GET /health", () => {
+describe("GET /api/health", () => {
   it("returns 200 with status ok", async () => {
-    const res = await request(app).get("/health");
+    const res = await request(app).get("/api/health");
     expect(res.status).toBe(200);
     expect(res.body.status).toBe("ok");
   });

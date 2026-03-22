@@ -1,4 +1,4 @@
-# Multi-stage build for App Runner / ECS
+# Multi-stage build for ECS Fargate
 
 # ---- Build stage ----
 FROM node:24-alpine AS builder
@@ -33,7 +33,6 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/lib/dist ./lib/dist
 COPY --from=builder /app/api/dist ./api/dist
 
-EXPOSE 3000
+EXPOSE 3001
 
-# App Runner expects the process to listen on $PORT
 CMD ["node", "api/dist/index.js"]

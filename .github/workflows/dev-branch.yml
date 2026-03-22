@@ -48,6 +48,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Build UI image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ui/Dockerfile
+          push: false
+          tags: saas-ui:${{ github.sha }}
+
       - name: Build API image
         uses: docker/build-push-action@v5
         with:

@@ -5,21 +5,25 @@
   "workspaces": [
     "lib",
     "api",
+    "ui",
     "workers",
     "infra/*"
   ],
   "scripts": {
-    "build": "npm run build -w @repo/lib && npm run build -w @repo/api && npm run build -w @repo/workers && npm run build -w @repo/infra-cdk",
-    "dev": "npm run build -w @repo/lib && npm run dev -w @repo/api",
+    "build": "npm run build -w @repo/lib && npm run build -w @repo/api && npm run build -w @repo/ui && npm run build -w @repo/workers && npm run build -w @repo/infra-cdk",
+    "dev:api": "npm run build -w @repo/lib && npm run dev -w @repo/api",
+    "dev:ui": "npm run dev -w @repo/ui",
+    "dev:all": "concurrently -k -n api,ui -c blue,green \"npm:dev:api\" \"npm:dev:ui\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "npm run build -w @repo/lib && tsc --noEmit -p api/tsconfig.json && tsc --noEmit -p workers/tsconfig.json"
+    "typecheck": "npm run build -w @repo/lib && tsc --noEmit -p api/tsconfig.json && tsc --noEmit -p ui/tsconfig.json && tsc --noEmit -p workers/tsconfig.json && tsc --noEmit -p infra/cdk/tsconfig.json"
   },
   "engines": {
     "node": ">=24"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
+    "concurrently": "^9.2.1",
     "typescript": "^5.9.3",
     "vitest": "^4.1.0"
   }

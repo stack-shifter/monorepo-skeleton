@@ -16,7 +16,7 @@ const CreateDealSchema = z.object({
 });
 
 /**
- * POST /deals
+ * POST /api/deals
  *
  * Example request:
  * {
@@ -45,7 +45,7 @@ router.post("/", async (req, res) => {
 });
 
 /**
- * GET /deals
+ * GET /api/deals
  */
 router.get("/", async (req, res) => {
   const tenantId = req.headers["x-tenant-id"] as string | undefined;
